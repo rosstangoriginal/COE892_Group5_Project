@@ -28,6 +28,29 @@ def mysql_connect():
     return db, db.cursor(dictionary=True)
 
 
+@app.get("/portfolios/get_total_portfolio_value/{portfolio_id}")
+async def get_total_portfolio_value(portfolio_id: int):
+    db, cursor = mysql_connect()
+
+    cursor.execute("SELECT AssetID, Quantity FROM Holdings WHERE PortfolioID = %s", (portfolio_id,))
+    asset_ids = cursor.fetchall()
+
+    if not asset_ids:
+        raise HTTPException(status_code=404, detail="No holdings found for the given portfolio id")
+
+    total_portfolio_value = 0
+    for aid in asset_ids:
+        query = "SELECT MarketPrice from Assets WHERE AssetID = %s"
+        cursor.execute(query, (aid['AssetID'],))
+        entry = cursor.fetchone()
+        total_portfolio_value += (entry['MarketPrice'] * aid['Quantity'])
+
+    cursor.close()
+    db.close()
+
+    return total_portfolio_value
+
+
 @app.get("/portfolios/get_portfolio/{user_id}")
 def get_portfolio(user_id: int):
     db, cursor = mysql_connect()
