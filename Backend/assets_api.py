@@ -45,6 +45,31 @@ def get_asset(asset_id: int):
         raise HTTPException(status_code=404, detail="Asset of that given id not found")
 
 
+@app.get("/assets/get_all_assets_by_portfolio_id/{portfolio_id}")
+async def get_all_assets(portfolio_id: int):
+    db, cursor = mysql_connect()
+
+    cursor.execute("SELECT AssetID FROM Holdings WHERE PortfolioID = %s", (portfolio_id,))
+    asset_ids = cursor.fetchall()
+
+    if not asset_ids:
+        raise HTTPException(status_code=404, detail="No holdings found for the given portfolio id")
+
+    asset_arr = []
+    for aid in asset_ids:
+        query = "SELECT * from Assets WHERE AssetID = %s"
+        cursor.execute(query, (aid['AssetID'],))
+        asset_arr.extend(cursor.fetchall())
+
+    cursor.close()
+    db.close()
+
+    if asset_arr:
+        return asset_arr
+    else:
+        raise HTTPException(status_code=404, detail="No assets found for the given portfolio id")
+
+
 @app.post("/assets/create_asset")
 def create_asset(asset: Asset):
     db, cursor = mysql_connect()

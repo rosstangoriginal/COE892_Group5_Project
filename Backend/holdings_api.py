@@ -45,6 +45,22 @@ async def get_holding(portfolio_id: int):
         raise HTTPException(status_code=404, detail="Holding of that given portfolio id not found")
 
 
+@app.get("/holdings/get_all_holdings_by_portfolio_id/{portfolio_id}")
+async def get_all_holdings(portfolio_id: int):
+    db, cursor = mysql_connect()
+
+    cursor.execute("SELECT * FROM Holdings WHERE PortfolioID = %s", (portfolio_id,))
+    holdings_arr = cursor.fetchall()
+
+    cursor.close()
+    db.close()
+
+    if holdings_arr:
+        return holdings_arr
+    else:
+        raise HTTPException(status_code=404, detail="No holdings found for the given portfolio id")
+
+
 @app.get("/holdings/get_holding_by_asset_id/{asset_id}")
 def get_holding(asset_id: int):
     db, cursor = mysql_connect()
