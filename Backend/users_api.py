@@ -12,6 +12,11 @@ class User(BaseModel):
     email: str
 
 
+class Login(BaseModel):
+    username: str
+    password: str
+
+
 def mysql_connect():
     db_host = config('DB_HOST')
     db_user = config('DB_USER')
@@ -25,6 +30,22 @@ def mysql_connect():
         database=db_database
     )
     return db, db.cursor(dictionary=True)
+
+
+@app.post("/users/login")
+def verify_login(login: Login):
+    db, cursor = mysql_connect()
+
+    query = "SELECT UserID, Password FROM Users WHERE Username = %s"
+    cursor.execute(query, (login.username,))
+    target_user = cursor.fetchone()
+    print(target_user)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User with desired Username was not found")
+    if target_user['Password'] != login.password:
+        raise HTTPException(status_code=401, detail="Password does not match the one on file")
+
+    return target_user['UserID']
 
 
 @app.get("/users/get_user/{user_id}")
@@ -47,6 +68,11 @@ def get_user(user_id: int):
 def create_user(user: User):
     db, cursor = mysql_connect()
 
+    cursor.execute("SELECT * from Users WHERE Username = %s", (user.username,))
+    existing_user = cursor.fetchone()
+    if existing_user:
+        raise HTTPException(status_code=409, detail="Username already taken, please choose another")
+
     query = """
     INSERT INTO Users (Username, Password, Email)
     VALUES (%s, %s, %s)
@@ -58,10 +84,14 @@ def create_user(user: User):
     )
     cursor.execute(query, data)
     db.commit()
+
+    query2 = "SELECT UserID FROM Users WHERE Username = %s"
+    cursor.execute(query2, (user.username,))
+    new_user_id = cursor.fetchone()
     cursor.close()
     db.close()
 
-    return {"message": "User created successfully."}
+    return new_user_id['UserID']
 
 
 @app.put("/users/update_user/{user_id}")
