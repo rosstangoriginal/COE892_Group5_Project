@@ -99,6 +99,7 @@ def create_holding(holding: Holding):
     db.close()
     return {"message": "Holding created successfully."}
 
+
 @app.put("/holdings/update_holding_by_portfolio_id/{portfolio_id}")
 def update_holding(portfolio_id: int, holding: Holding):
     db, cursor = mysql_connect()
@@ -161,6 +162,7 @@ def update_holding(asset_id: int, holding: Holding):
     cursor.close()
     db.close()
     return {"message": "Holding updated successfully."}
+
 
 @app.delete("/holdings/delete_holding_by_portfolio_id/{portfolio_id}")
 def delete_holding(portfolio_id: int):
