@@ -1,10 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import mysql.connector
 from typing import Optional
 from decouple import config
 
-app = FastAPI()
+router = APIRouter()
 
 class WatchlistCreate(BaseModel):
     user_ID: int
@@ -36,7 +36,7 @@ def mysql_connect():
     )
     return db, db.cursor(dictionary=True)
 
-@app.get("/watchlist/get_all_watchlist/{user_id}")
+@router.get("/watchlist/get_all_watchlist/{user_id}")
 def get_all_watchlists(user_id: int):
     try:
         db, cursor = mysql_connect()
@@ -58,7 +58,7 @@ def get_all_watchlists(user_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.post("/watchlist/add_watchlist")
+@router.post("/watchlist/add_watchlist")
 def add_watchlist(watchlist: WatchlistCreate):
     try:
         db, cursor = mysql_connect()
@@ -82,7 +82,7 @@ def add_watchlist(watchlist: WatchlistCreate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.put("/watchlist/update_watchlist")
+@router.put("/watchlist/update_watchlist")
 def update_watchlist(update_watchlist: WatchlistUpdate):
     try:
         db, cursor = mysql_connect()
@@ -112,7 +112,7 @@ def update_watchlist(update_watchlist: WatchlistUpdate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.delete("/watchlist/delete_watchlist")
+@router.delete("/watchlist/delete_watchlist")
 def delete_watchlist(delete_watchlist: WatchlistDelete):
     try:
         db, cursor = mysql_connect()
