@@ -1,10 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import mysql.connector
 from datetime import date
 from decouple import config
 
-app = FastAPI()
+router = APIRouter()
 
 class PortfolioPerformance(BaseModel):
     user_id: int
@@ -40,7 +40,7 @@ def mysql_connect():
     )
     return db, db.cursor(dictionary=True)
 
-@app.get("/performance/get_all_performances/{user_id}")
+@router.get("/performance/get_all_performances/{user_id}")
 def get_all_performances_by_user(user_id: int):
     try:
         db, cursor = mysql_connect()
@@ -63,7 +63,7 @@ def get_all_performances_by_user(user_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.get("/performance/by_portfolioid/{portfolio_id}")
+@router.get("/performance/by_portfolioid/{portfolio_id}")
 def get_performance_by_portfolioid(portfolio_id: int):
     try:
         db, cursor = mysql_connect()
@@ -82,7 +82,7 @@ def get_performance_by_portfolioid(portfolio_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/performance/add_performance")
+@router.post("/performance/add_performance")
 def add_performance(performance: PortfolioPerformance):
     try:
         db, cursor = mysql_connect()
@@ -115,7 +115,7 @@ def add_performance(performance: PortfolioPerformance):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.put("/performance/update_performance")
+@router.put("/performance/update_performance")
 def update_performance(performance_data: PortfolioPerformance):
     try:
         db, cursor = mysql_connect()
@@ -156,7 +156,7 @@ def update_performance(performance_data: PortfolioPerformance):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.delete("/performance/delete_performance")
+@router.delete("/performance/delete_performance")
 def delete_performance(data: DeletePerformanceData):
     try:
         db, cursor = mysql_connect()
@@ -186,7 +186,7 @@ def delete_performance(data: DeletePerformanceData):
 IF WE ARE USING JUST THE BASE API'S FOR ADD, UPDATE AND DELETE
 """
 
-@app.post("/performance/temp_add_performance")
+@router.post("/performance/temp_add_performance")
 def temp_add_performance(temp_add: tempPerformance):
     try:
         db, cursor = mysql_connect()
@@ -211,7 +211,7 @@ def temp_add_performance(temp_add: tempPerformance):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.put("/performance/temp_update_performance")
+@router.put("/performance/temp_update_performance")
 def temp_update_performance(temp_update: tempPerformance):
     try:
         db, cursor = mysql_connect()
@@ -245,7 +245,7 @@ def temp_update_performance(temp_update: tempPerformance):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.delete("/performance/temp_delete_performance")
+@router.delete("/performance/temp_delete_performance")
 def temp_delete_performance(portfolio_id: int):
     try:
         db, cursor = mysql_connect()

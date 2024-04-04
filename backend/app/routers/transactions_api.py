@@ -1,11 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import mysql.connector
 from datetime import date
 from typing import Optional
 from decouple import config
 
-app = FastAPI()
+router = APIRouter()
 
 class HoldingTransaction(BaseModel):
     portfolio_id: int
@@ -41,7 +41,7 @@ def mysql_connect():
     )
     return db, db.cursor(dictionary=True)
 
-@app.get("/transaction/get_all_transactions")
+@router.get("/transaction/get_all_transactions")
 def get_all_transactions(portfolio_id: int):
     try:
         db, cursor = mysql_connect()
@@ -64,7 +64,7 @@ def get_all_transactions(portfolio_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/transaction/add_transaction")
+@router.post("/transaction/add_transaction")
 def add_transaction(add_transaction: HoldingTransaction):
     try:
         db, cursor = mysql_connect()
@@ -96,7 +96,7 @@ def add_transaction(add_transaction: HoldingTransaction):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.put("/transaction/update_transaction")
+@router.put("/transaction/update_transaction")
 def update_transaction(update_transaction: HoldingTransaction):
     try:
         db, cursor = mysql_connect()
@@ -137,7 +137,7 @@ def update_transaction(update_transaction: HoldingTransaction):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.delete("/transaction/delete_transaction")
+@router.delete("/transaction/delete_transaction")
 def delete_transaction(delete_transaction: DeleteTransactionData):
     try:
         db, cursor = mysql_connect()
@@ -163,7 +163,7 @@ def delete_transaction(delete_transaction: DeleteTransactionData):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/transactions/get_user_transactions/{user_id}")
+@router.get("/transactions/get_user_transactions/{user_id}")
 def get_user_transactions(user_id: int):
     try:
         db, cursor = mysql_connect()
@@ -200,7 +200,7 @@ def get_user_transactions(user_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.get("/transactions/get_last_five_transactions/{user_id}")
+@router.get("/transactions/get_last_five_transactions/{user_id}")
 def get_last_five_transactions(user_id: int):
     try:
         db, cursor = mysql_connect()
@@ -244,7 +244,7 @@ def get_last_five_transactions(user_id: int):
 IF WE ARE USING JUST THE BASE API'S FOR ADD, UPDATE AND DELETE
 """
 
-@app.post("/transaction/temp_add_transaction")
+@router.post("/transaction/temp_add_transaction")
 def temp_add_transaction(temp_add: tempTransaction):
     try:
         db, cursor = mysql_connect()
@@ -269,7 +269,7 @@ def temp_add_transaction(temp_add: tempTransaction):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.put("/transaction/temp_update_transaction/{holding_id}")
+@router.put("/transaction/temp_update_transaction/{holding_id}")
 def temp_update_transaction(holding_id: int, temp_update: tempTransaction):
     try:
         db, cursor = mysql_connect()
@@ -304,7 +304,7 @@ def temp_update_transaction(holding_id: int, temp_update: tempTransaction):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.delete("/transaction/temp_delete_transaction/{holding_id}")
+@router.delete("/transaction/temp_delete_transaction/{holding_id}")
 def temp_delete_transaction(holding_id: int):
     try:
         db, cursor = mysql_connect()

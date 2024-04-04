@@ -1,11 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import mysql.connector
 from datetime import date
 from decouple import config
 import traceback
 
-app = FastAPI()
+router = APIRouter()
 
 class HoldingDividend(BaseModel):
     portfolio_id: int
@@ -35,7 +35,7 @@ def mysql_connect():
     )
     return db, db.cursor(dictionary=True)
 
-@app.get("/dividends/get_dividend")
+@router.get("/dividends/get_dividend")
 def get_dividend(portfolio_id: int, asset_id: int):
     try:
         db, cursor = mysql_connect()
@@ -65,7 +65,7 @@ def get_dividend(portfolio_id: int, asset_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.post("/dividends/create_dividend")
+@router.post("/dividends/create_dividend")
 def add_dividend(add_dividend: HoldingDividend):
     try:
         db, cursor = mysql_connect()
@@ -96,7 +96,7 @@ def add_dividend(add_dividend: HoldingDividend):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.put("/dividends/update_dividend")
+@router.put("/dividends/update_dividend")
 def update_dividend(update_dividend: HoldingDividend):
     try:
         db, cursor = mysql_connect()
@@ -135,7 +135,7 @@ def update_dividend(update_dividend: HoldingDividend):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.delete("/dividends/delete_dividend")
+@router.delete("/dividends/delete_dividend")
 def delete_dividend(data: DeleteDividendData):
     try:
         db, cursor = mysql_connect()
@@ -165,7 +165,7 @@ def delete_dividend(data: DeleteDividendData):
 IF WE ARE USING JUST THE BASE API'S FOR ADD, UPDATE AND DELETE
 """
 
-@app.post("/dividends/temp_add_dividend")
+@router.post("/dividends/temp_add_dividend")
 def temp_add_dividend(temp_add: tempDividend):
     try:
         db, cursor = mysql_connect()
@@ -188,7 +188,7 @@ def temp_add_dividend(temp_add: tempDividend):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.put("/dividends/temp_update_dividend")
+@router.put("/dividends/temp_update_dividend")
 def temp_update_dividend(temp_update: tempDividend):
     try:
         db, cursor = mysql_connect()
@@ -220,7 +220,7 @@ def temp_update_dividend(temp_update: tempDividend):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.delete("/dividends/temp_delete_dividend")
+@router.delete("/dividends/temp_delete_dividend")
 def temp_delete_dividend(holding_id: int):
     try:
         db, cursor = mysql_connect()

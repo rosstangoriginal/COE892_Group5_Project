@@ -1,10 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import mysql.connector
 from typing import Optional
 from decouple import config
 
-app = FastAPI()
+router = APIRouter()
+
 
 class Alerts(BaseModel):
     user_ID: int
@@ -12,7 +13,7 @@ class Alerts(BaseModel):
     alert_description: str
     trigger_condition: str
     status: str
-    
+
 class AlertCriteria(BaseModel):
     user_id: int
     alert_id: int
@@ -39,7 +40,7 @@ def mysql_connect():
     )
     return db, db.cursor(dictionary=True)
     
-@app.get("/alerts/get_alerts/{user_id}")
+@router.get("/alerts/get_alerts/{user_id}")
 def get_alerts(user_id: int):
     try:
         db, cursor = mysql_connect()
@@ -57,7 +58,7 @@ def get_alerts(user_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.post("/alerts/create_alert")
+@router.post("/alerts/create_alert")
 def create_alert(alert: Alerts):
     try:
         db, cursor = mysql_connect()
@@ -82,7 +83,7 @@ def create_alert(alert: Alerts):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.put("/alerts/update_alert")
+@router.put("/alerts/update_alert")
 def update_alert(criteria: AlertCriteria):
     try:
         db, cursor = mysql_connect()
@@ -122,7 +123,7 @@ def update_alert(criteria: AlertCriteria):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.delete("/alerts/delete_alert")
+@router.delete("/alerts/delete_alert")
 def delete_alert(criteria: AlertDeleteCriteria):
     try:
         db, cursor = mysql_connect()
