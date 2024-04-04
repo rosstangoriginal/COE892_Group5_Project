@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import mysql.connector
 from datetime import date
+from decouple import config
+import traceback
 
 app = FastAPI()
 
@@ -9,24 +11,27 @@ class HoldingDividend(BaseModel):
     portfolio_id: int
     asset_id: int
     dividend_amount: float
-    payment_date: str
+    payment_date: date
     
 class DeleteDividendData(BaseModel):
     portfolio_id: int
-    asset_id: str
-    date: date
+    asset_id: int
 
 class tempDividend(BaseModel):
     holding_id: int
     dividend_amount: float
-    payment_date: str
     
 def mysql_connect():
-    db = mysql.connector.connect (
-        host="your_host",
-        user="your_user",
-        password="your_password",
-        database="your_database"
+    db_host = config('DB_HOST')
+    db_user = config('DB_USER')
+    db_password = config('DB_PASSWORD')
+    db_database = config('DB_DATABASE')
+
+    db = mysql.connector.connect(
+        host=db_host,
+        user=db_user,
+        password=db_password,
+        database=db_database
     )
     return db, db.cursor(dictionary=True)
 
@@ -67,8 +72,9 @@ def add_dividend(add_dividend: HoldingDividend):
 
         query = "SELECT HoldingID FROM Holdings WHERE PortfolioID = %s AND AssetID = %s"
         cursor.execute(query, (add_dividend.portfolio_id, add_dividend.asset_id))
-        holdings = cursor.fetchall()
+        holdings = cursor.fetchone()
 
+        print(holdings)
         if not holdings:
             raise HTTPException(status_code=404, detail="No holdings found for the given PortfolioID and AssetID")
         
@@ -97,7 +103,7 @@ def update_dividend(update_dividend: HoldingDividend):
 
         query = "SELECT HoldingID FROM Holdings WHERE PortfolioID = %s AND AssetID = %s"
         cursor.execute(query, (update_dividend.portfolio_id, update_dividend.asset_id))
-        holdings = cursor.fetchall()
+        holdings = cursor.fetchone()
 
         if not holdings:
             raise HTTPException(status_code=404, detail="No holdings found for the given PortfolioID and AssetID")
@@ -129,7 +135,7 @@ def update_dividend(update_dividend: HoldingDividend):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.delete("/dividends/delete_dividend/{dividend_id}")
+@app.delete("/dividends/delete_dividend")
 def delete_dividend(data: DeleteDividendData):
     try:
         db, cursor = mysql_connect()
@@ -141,8 +147,8 @@ def delete_dividend(data: DeleteDividendData):
         if not holding:
             raise HTTPException(status_code=404, detail="Holding not found")
 
-        query = "DELETE FROM Dividends HoldingID = %s AND PaymentDate = %s"
-        cursor.execute(query, (holding['HoldingID'], data.date))
+        query = "DELETE FROM Dividends WHERE HoldingID = %s"
+        cursor.execute(query, (holding['HoldingID'],))
         affected_rows = cursor.rowcount
         db.commit()
         cursor.close()
@@ -165,7 +171,7 @@ def temp_add_dividend(temp_add: tempDividend):
         db, cursor = mysql_connect()
 
         query = """
-        INSERT INTO Dividends (HoldingID, DividendAmount, PaymentDate, DailyChange)
+        INSERT INTO Dividends (HoldingID, DividendAmount, PaymentDate)
         VALUES (%s, %s, %s)
         """
         data = (

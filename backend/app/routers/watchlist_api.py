@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import mysql.connector
 from typing import Optional
+from decouple import config
 
 app = FastAPI()
 
@@ -22,11 +23,16 @@ class WatchlistDelete(BaseModel):
     asset_ID: int
     
 def mysql_connect():
-    db = mysql.connector.connect (
-        host="your_host",
-        user="your_user",
-        password="your_password",
-        database="your_database"
+    db_host = config('DB_HOST')
+    db_user = config('DB_USER')
+    db_password = config('DB_PASSWORD')
+    db_database = config('DB_DATABASE')
+
+    db = mysql.connector.connect(
+        host=db_host,
+        user=db_user,
+        password=db_password,
+        database=db_database
     )
     return db, db.cursor(dictionary=True)
 

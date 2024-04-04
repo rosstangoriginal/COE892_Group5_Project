@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import mysql.connector
 from datetime import date
+from decouple import config
 
 app = FastAPI()
 
@@ -26,11 +27,16 @@ class tempPerformance(BaseModel):
     total_gain_loss: float
     
 def mysql_connect():
-    db = mysql.connector.connect (
-        host="your_host",
-        user="your_user",
-        password="your_password",
-        database="your_database"
+    db_host = config('DB_HOST')
+    db_user = config('DB_USER')
+    db_password = config('DB_PASSWORD')
+    db_database = config('DB_DATABASE')
+
+    db = mysql.connector.connect(
+        host=db_host,
+        user=db_user,
+        password=db_password,
+        database=db_database
     )
     return db, db.cursor(dictionary=True)
 
@@ -239,7 +245,7 @@ def temp_update_performance(temp_update: tempPerformance):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.delete("performance/temp_delete_performance")
+@app.delete("/performance/temp_delete_performance")
 def temp_delete_performance(portfolio_id: int):
     try:
         db, cursor = mysql_connect()

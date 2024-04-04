@@ -3,6 +3,7 @@ from pydantic import BaseModel
 import mysql.connector
 from datetime import date
 from typing import Optional
+from decouple import config
 
 app = FastAPI()
 
@@ -27,25 +28,30 @@ class tempTransaction(BaseModel):
     transaction_date: str
     
 def mysql_connect():
+    db_host = config('DB_HOST')
+    db_user = config('DB_USER')
+    db_password = config('DB_PASSWORD')
+    db_database = config('DB_DATABASE')
+
     db = mysql.connector.connect(
-        host="your_host",
-        user="your_user",
-        password="your_password",
-        database="your_database"
+        host=db_host,
+        user=db_user,
+        password=db_password,
+        database=db_database
     )
     return db, db.cursor(dictionary=True)
 
 @app.get("/transaction/get_all_transactions")
-def get_all_transactions(portfolio_id: int, asset_id: int):
+def get_all_transactions(portfolio_id: int):
     try:
         db, cursor = mysql_connect()
         
         query = """
         SELECT t.* FROM Transactions t
         JOIN Holdings h ON t.HoldingID = h.HoldingID
-        WHERE h.PortfolioID = %s AND h.AssetID = %s
+        WHERE h.PortfolioID = %s
         """
-        cursor.execute(query, (portfolio_id, asset_id))
+        cursor.execute(query, (portfolio_id,))
         transactions = cursor.fetchall()
 
         cursor.close()
@@ -86,7 +92,7 @@ def add_transaction(add_transaction: HoldingTransaction):
         cursor.close()
         db.close()
 
-        return {"message": "Performance added successfully."}
+        return {"message": "Transaction added successfully."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -156,7 +162,84 @@ def delete_transaction(delete_transaction: DeleteTransactionData):
             return {"message": "Transaction deleted successfully."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/transactions/get_user_transactions/{user_id}")
+def get_user_transactions(user_id: int):
+    try:
+        db, cursor = mysql_connect()
+
+        query = """
+        SELECT 
+            Transactions.TransactionID,
+            Transactions.TransactionType,
+            Transactions.Quantity,
+            Transactions.TransactionPrice,
+            Transactions.TransactionDate,
+            Assets.AssetName
+        FROM 
+            Transactions
+        INNER JOIN 
+            Holdings ON Transactions.HoldingID = Holdings.HoldingID
+        INNER JOIN 
+            Assets ON Holdings.AssetID = Assets.AssetID
+        INNER JOIN 
+            Portfolios ON Holdings.PortfolioID = Portfolios.PortfolioID
+        WHERE
+            Portfolios.UserID = %s;
+        """
+        cursor.execute(query, (user_id,))
+        transactions = cursor.fetchall()
+
+        cursor.close()
+        db.close()
+
+        if transactions:
+            return transactions
+        else:
+            raise HTTPException(status_code=404, detail="No transactions found for the specified user")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     
+@app.get("/transactions/get_last_five_transactions/{user_id}")
+def get_last_five_transactions(user_id: int):
+    try:
+        db, cursor = mysql_connect()
+
+        query = """
+        SELECT 
+            t.TransactionID,
+            t.TransactionType,
+            t.Quantity,
+            t.TransactionPrice,
+            t.TransactionDate,
+            a.AssetName
+        FROM 
+            Transactions t
+        INNER JOIN 
+            Holdings h ON t.HoldingID = h.HoldingID
+        INNER JOIN 
+            Assets a ON h.AssetID = a.AssetID
+        INNER JOIN 
+            Portfolios p ON h.PortfolioID = p.PortfolioID
+        WHERE
+            p.UserID = %s
+        ORDER BY 
+            t.TransactionDate DESC, t.TransactionID DESC
+        LIMIT 5;
+        """
+        cursor.execute(query, (user_id,))
+        transactions = cursor.fetchall()
+
+        cursor.close()
+        db.close()
+
+        if transactions:
+            return transactions
+        else:
+            raise HTTPException(status_code=404, detail="No transactions found for the specified user")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 """
 IF WE ARE USING JUST THE BASE API'S FOR ADD, UPDATE AND DELETE
 """
@@ -186,12 +269,12 @@ def temp_add_transaction(temp_add: tempTransaction):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.put("transaction/temp_update_transaction")
-def temp_update_transaction(temp_update: tempTransaction):
+@app.put("/transaction/temp_update_transaction/{holding_id}")
+def temp_update_transaction(holding_id: int, temp_update: tempTransaction):
     try:
         db, cursor = mysql_connect()
 
-        cursor.execute("SELECT * FROM Transactions WHERE HoldingID = %s", (tempTransaction.holding_ID,))
+        cursor.execute("SELECT * FROM Transactions WHERE HoldingID = %s", (holding_id,))
         existing_transactions = cursor.fetchone()
         if not existing_transactions:
             cursor.close()
@@ -200,14 +283,16 @@ def temp_update_transaction(temp_update: tempTransaction):
         
         query = """
         UPDATE Transactions
-        SET TransactionType = %s, Quantity = %s, TransactionPrice = %s, TransactionDate = %s
+        SET HoldingID = %s, TransactionType = %s, Quantity = %s, TransactionPrice = %s, TransactionDate = %s
         WHERE HoldingID = %s
         """
         update_values = (
+            temp_update.holding_ID,
             temp_update.transaction_type,
             temp_update.quantity,
             temp_update.transaction_price,
             temp_update.transaction_date,
+            holding_id
         )
 
         cursor.execute(query, update_values)
@@ -219,7 +304,7 @@ def temp_update_transaction(temp_update: tempTransaction):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.delete("transaction/temp_delete_transaction")
+@app.delete("/transaction/temp_delete_transaction/{holding_id}")
 def temp_delete_transaction(holding_id: int):
     try:
         db, cursor = mysql_connect()

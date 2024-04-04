@@ -1,7 +1,8 @@
-from fastapi import FastAPI, HTTPException, Path
-from pydantic import BaseModel, Field
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 import mysql.connector
 from typing import Optional
+from decouple import config
 
 app = FastAPI()
 
@@ -14,21 +15,27 @@ class Alerts(BaseModel):
     
 class AlertCriteria(BaseModel):
     user_id: int
-    alert_type: str
+    alert_id: int
+    alert_type: Optional[str] = None
     new_description: Optional[str] = None
     new_trigger_condition: Optional[str] = None
     new_status: Optional[str] = None
 
 class AlertDeleteCriteria(BaseModel):
     user_id: int
-    alert_type: str
+    alert_id: int
     
 def mysql_connect():
+    db_host = config('DB_HOST')
+    db_user = config('DB_USER')
+    db_password = config('DB_PASSWORD')
+    db_database = config('DB_DATABASE')
+
     db = mysql.connector.connect(
-        host="your_host",
-        user="your_user",
-        password="your_password",
-        database="your_database"
+        host=db_host,
+        user=db_user,
+        password=db_password,
+        database=db_database
     )
     return db, db.cursor(dictionary=True)
     
@@ -91,14 +98,17 @@ def update_alert(criteria: AlertCriteria):
         if criteria.new_status:
             updates.append("Status = %s")
             params.append(criteria.new_status)
+        if criteria.alert_type:
+            updates.append("AlertType = %s")
+            params.append(criteria.alert_type)
 
         if not updates:
             raise HTTPException(status_code=400, detail="No update information provided.")
 
         update_str = ", ".join(updates)
-        params.extend([criteria.user_id, criteria.alert_type])
+        params.extend([criteria.user_id, criteria.alert_id])
 
-        query = f"UPDATE Alerts SET {update_str} WHERE UserID = %s AND AlertType = %s"
+        query = f"UPDATE Alerts SET {update_str} WHERE UserID = %s AND AlertID = %s"
         cursor.execute(query, tuple(params))
         db.commit()
 
@@ -117,8 +127,8 @@ def delete_alert(criteria: AlertDeleteCriteria):
     try:
         db, cursor = mysql_connect()
         
-        query = "DELETE FROM Alerts WHERE UserID = %s AND AlertType = %s"
-        cursor.execute(query, (criteria.user_id, criteria.alert_type))
+        query = "DELETE FROM Alerts WHERE UserID = %s AND AlertID = %s"
+        cursor.execute(query, (criteria.user_id, criteria.alert_id))
         db.commit()
 
         affected_rows = cursor.rowcount
