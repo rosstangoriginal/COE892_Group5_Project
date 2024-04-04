@@ -1,9 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import mysql.connector
 from decouple import config
 
-app = FastAPI()
+router = APIRouter()
 
 
 class Asset(BaseModel):
@@ -29,7 +29,7 @@ def mysql_connect():
     return db, db.cursor(dictionary=True)
 
 
-@app.get("/assets/get_asset/{asset_id}")
+@router.get("/assets/get_asset/{asset_id}")
 def get_asset(asset_id: int):
     db, cursor = mysql_connect()
 
@@ -45,7 +45,7 @@ def get_asset(asset_id: int):
         raise HTTPException(status_code=404, detail="Asset of that given id not found")
 
 
-@app.get("/assets/get_all_assets_by_portfolio_id/{portfolio_id}")
+@router.get("/assets/get_all_assets_by_portfolio_id/{portfolio_id}")
 async def get_all_assets(portfolio_id: int):
     db, cursor = mysql_connect()
 
@@ -70,7 +70,7 @@ async def get_all_assets(portfolio_id: int):
         raise HTTPException(status_code=404, detail="No assets found for the given portfolio id")
 
 
-@app.post("/assets/create_asset")
+@router.post("/assets/create_asset")
 def create_asset(asset: Asset):
     db, cursor = mysql_connect()
 
@@ -93,7 +93,7 @@ def create_asset(asset: Asset):
     return {"message": "Asset created successfully."}
 
 
-@app.put("/assets/update_asset/{asset_id}")
+@router.put("/assets/update_asset/{asset_id}")
 def update_asset(asset_id: int, asset: Asset):
     db, cursor = mysql_connect()
 
@@ -126,7 +126,7 @@ def update_asset(asset_id: int, asset: Asset):
     return {"message": "Asset updated successfully."}
 
 
-@app.delete("/assets/delete_asset/{asset_id}")
+@router.delete("/assets/delete_asset/{asset_id}")
 def delete_asset(asset_id: int):
     db, cursor = mysql_connect()
 
