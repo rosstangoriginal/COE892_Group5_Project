@@ -1,9 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import mysql.connector
 from decouple import config
 
-app = FastAPI()
+router = APIRouter()
 
 
 class User(BaseModel):
@@ -32,7 +32,7 @@ def mysql_connect():
     return db, db.cursor(dictionary=True)
 
 
-@app.post("/users/login")
+@router.post("/users/login")
 def verify_login(login: Login):
     db, cursor = mysql_connect()
 
@@ -48,7 +48,7 @@ def verify_login(login: Login):
     return target_user['UserID']
 
 
-@app.get("/users/get_user/{user_id}")
+@router.get("/users/get_user/{user_id}")
 def get_user(user_id: int):
     db, cursor = mysql_connect()
 
@@ -64,7 +64,7 @@ def get_user(user_id: int):
         raise HTTPException(status_code=404, detail="User of that given id not found")
 
 
-@app.post("/users/create_user")
+@router.post("/users/create_user")
 def create_user(user: User):
     db, cursor = mysql_connect()
 
@@ -94,7 +94,7 @@ def create_user(user: User):
     return new_user_id['UserID']
 
 
-@app.put("/users/update_user/{user_id}")
+@router.put("/users/update_user/{user_id}")
 def update_user(user_id: int, user: User):
     db, cursor = mysql_connect()
 
@@ -125,7 +125,7 @@ def update_user(user_id: int, user: User):
     return {"message": "User updated successfully."}
 
 
-@app.delete("/users/delete_user/{user_id}")
+@router.delete("/users/delete_user/{user_id}")
 def delete_user(user_id: int):
     db, cursor = mysql_connect()
 

@@ -1,9 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import mysql.connector
 from decouple import config
 
-app = FastAPI()
+router = APIRouter()
 
 
 class Holding(BaseModel):
@@ -29,7 +29,7 @@ def mysql_connect():
     return db, db.cursor(dictionary=True)
 
 
-@app.get("/holdings/get_holding_by_portfolio_id/{portfolio_id}")
+@router.get("/holdings/get_holding_by_portfolio_id/{portfolio_id}")
 async def get_holding(portfolio_id: int):
     db, cursor = mysql_connect()
 
@@ -45,7 +45,7 @@ async def get_holding(portfolio_id: int):
         raise HTTPException(status_code=404, detail="Holding of that given portfolio id not found")
 
 
-@app.get("/holdings/get_all_holdings_by_portfolio_id/{portfolio_id}")
+@router.get("/holdings/get_all_holdings_by_portfolio_id/{portfolio_id}")
 async def get_all_holdings(portfolio_id: int):
     db, cursor = mysql_connect()
 
@@ -61,7 +61,7 @@ async def get_all_holdings(portfolio_id: int):
         raise HTTPException(status_code=404, detail="No holdings found for the given portfolio id")
 
 
-@app.get("/holdings/get_holding_by_asset_id/{asset_id}")
+@router.get("/holdings/get_holding_by_asset_id/{asset_id}")
 def get_holding(asset_id: int):
     db, cursor = mysql_connect()
 
@@ -77,7 +77,7 @@ def get_holding(asset_id: int):
         raise HTTPException(status_code=404, detail="Holding of that given asset id not found")
 
 
-@app.post("/holdings/create_holding")
+@router.post("/holdings/create_holding")
 def create_holding(holding: Holding):
     db, cursor = mysql_connect()
 
@@ -100,7 +100,7 @@ def create_holding(holding: Holding):
     return {"message": "Holding created successfully."}
 
 
-@app.put("/holdings/update_holding_by_portfolio_id/{portfolio_id}")
+@router.put("/holdings/update_holding_by_portfolio_id/{portfolio_id}")
 def update_holding(portfolio_id: int, holding: Holding):
     db, cursor = mysql_connect()
 
@@ -132,7 +132,7 @@ def update_holding(portfolio_id: int, holding: Holding):
     return {"message": "Holding updated successfully."}
 
 
-@app.put("/holdings/update_holding_by_asset_id/{asset_id}")
+@router.put("/holdings/update_holding_by_asset_id/{asset_id}")
 def update_holding(asset_id: int, holding: Holding):
     db, cursor = mysql_connect()
 
@@ -164,7 +164,7 @@ def update_holding(asset_id: int, holding: Holding):
     return {"message": "Holding updated successfully."}
 
 
-@app.delete("/holdings/delete_holding_by_portfolio_id/{portfolio_id}")
+@router.delete("/holdings/delete_holding_by_portfolio_id/{portfolio_id}")
 def delete_holding(portfolio_id: int):
     db, cursor = mysql_connect()
 
@@ -183,7 +183,7 @@ def delete_holding(portfolio_id: int):
     return {"message": "Holding deleted successfully."}
 
 
-@app.delete("/holdings/delete_holding_by_asset_id/{asset_id}")
+@router.delete("/holdings/delete_holding_by_asset_id/{asset_id}")
 def delete_holding(asset_id: int):
     db, cursor = mysql_connect()
 
