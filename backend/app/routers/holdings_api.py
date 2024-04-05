@@ -136,7 +136,7 @@ def update_holding(portfolio_id: int, holding: Holding):
 def update_holding(asset_id: int, holding: Holding):
     db, cursor = mysql_connect()
 
-    cursor.execute("SELECT * FROM Holdings WHERE PortfolioID = %s", (asset_id,))
+    cursor.execute("SELECT * FROM Holdings WHERE AssetID = %s", (asset_id,))
     existing_holding = cursor.fetchone()
     if not existing_holding:
         cursor.close()
