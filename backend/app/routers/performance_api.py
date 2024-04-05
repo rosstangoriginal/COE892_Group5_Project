@@ -40,17 +40,16 @@ def mysql_connect():
     )
     return db, db.cursor(dictionary=True)
 
-@router.get("/performance/get_all_performances/{user_id}")
-def get_all_performances_by_user(user_id: int):
+@router.get("/performance/get_all_performances/{portfolio_id}")
+def get_all_performances_by_user(portfolio_id: int):
     try:
         db, cursor = mysql_connect()
 
         query = """
-        SELECT p.* FROM Performance p
-        INNER JOIN Portfolios pf ON p.PortfolioID = pf.PortfolioID
-        WHERE pf.UserID = %s
-        """
-        cursor.execute(query, (user_id,))
+                SELECT * FROM performance WHERE PortfolioID = %s
+                """
+        
+        cursor.execute(query, (portfolio_id,))
         performances = cursor.fetchall()
 
         cursor.close()
@@ -59,7 +58,7 @@ def get_all_performances_by_user(user_id: int):
         if performances:
             return performances
         else:
-            raise HTTPException(status_code=404, detail="No performance records found for the given user")
+            raise HTTPException(status_code=404, detail="No performance records found for the given portfolio")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
@@ -82,36 +81,43 @@ def get_performance_by_portfolioid(portfolio_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/performance/add_performance")
-def add_performance(performance: PortfolioPerformance):
+@router.post("/performance/add_performance/{portfolio_id}")
+def add_performance(portfolio_id: int):
     try:
         db, cursor = mysql_connect()
 
-        query = "SELECT PortfolioID FROM Portfolios WHERE UserID = %s AND PortfolioName = %s"
-        cursor.execute(query, (performance.user_id, performance.portfolio_name))
-        portfolio = cursor.fetchone()
-        
-        if not portfolio:
-            raise HTTPException(status_code=404, detail="Portfolio not found")
-
         query = """
-        INSERT INTO Performance (PortfolioID, Date, PortfolioValue, DailyChange, TotalGainLoss)
-        VALUES (%s, %s, %s, %s, %s)
-        """
-        add_values = (
-            portfolio['PortfolioID'],
-            performance.date,
-            performance.portfolio_value,
-            performance.daily_change,
-            performance.total_gain_loss,
-        )
+                INSERT INTO performance(PortfolioID, Date, PortfolioValue, TotalGainLoss)
+                SELECT
+                    p.PortfolioID,
+                    CURRENT_DATE,
+                    SUM(h.Quantity * h.PurchasePrice) AS PortfolioValue,
+                    SUM(
+                        CASE
+                            WHEN t.TransactionType = 'Sell' THEN t.Quantity * t.TransactionPrice
+                            WHEN t.TransactionType = 'Buy' THEN -t.Quantity * t.TransactionPrice
+                            ELSE 0
+                        END
+                    ) AS TotalGainLoss
+                FROM
+                    portfolios p
+                INNER JOIN
+                    holdings h ON p.PortfolioID = h.PortfolioID
+                LEFT JOIN
+                    transactions t ON h.HoldingID = t.HoldingID
+                WHERE
+                    p.PortfolioID = %s
+                GROUP BY
+                    p.PortfolioID;
+                """
         
-        cursor.execute(query, add_values)
+        cursor.execute(query, (portfolio_id,))
         db.commit()
+
         cursor.close()
         db.close()
 
-        return {"message": "Performance added successfully."}
+        return "SUCCESS"
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
