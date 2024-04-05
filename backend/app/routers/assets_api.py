@@ -13,7 +13,6 @@ class Asset(BaseModel):
     market_price: float
     currency: str
 
-
 def mysql_connect():
     db_host = config('DB_HOST')
     db_user = config('DB_USER')
@@ -86,11 +85,12 @@ def create_asset(asset: Asset):
         asset.currency
     )
     cursor.execute(query, data)
+    asset_id = cursor.lastrowid
     db.commit()
     cursor.close()
     db.close()
 
-    return {"message": "Asset created successfully."}
+    return {"message": "Asset created successfully.", "asset_id": asset_id}
 
 
 @router.put("/assets/update_asset/{asset_id}")
