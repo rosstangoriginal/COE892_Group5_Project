@@ -32,23 +32,51 @@ def mysql_connect():
 async def get_total_portfolio_value(portfolio_id: int):
     db, cursor = mysql_connect()
 
-    cursor.execute("SELECT AssetID, Quantity FROM Holdings WHERE PortfolioID = %s", (portfolio_id,))
-    asset_ids = cursor.fetchall()
+    query = """
+            SELECT
+                -- Calculate the total value of the portfolio
+                SUM(h.Quantity * h.PurchasePrice) AS PortfolioValue,
+                -- Calculate the P/L
+                SUM(
+                    CASE
+                        WHEN t.TransactionType = 'Sell' THEN t.Quantity * t.TransactionPrice
+                        WHEN t.TransactionType = 'Buy' THEN -t.Quantity * t.TransactionPrice
+                        ELSE 0
+                    END
+                ) AS PL
+            FROM
+                portfolios p
+            INNER JOIN
+                holdings h ON p.PortfolioID = h.PortfolioID
+            LEFT JOIN
+                transactions t ON h.HoldingID = t.HoldingID
+            WHERE
+                p.PortfolioID = %s
+            GROUP BY
+                p.PortfolioID;
+            """
+    
+    cursor.execute(query, (portfolio_id,))
+    entry = cursor.fetchone()
 
-    if not asset_ids:
-        raise HTTPException(status_code=404, detail="No holdings found for the given portfolio id")
+    # cursor.execute("SELECT AssetID, Quantity FROM Holdings WHERE PortfolioID = %s", (portfolio_id,))
+    # asset_ids = cursor.fetchall()
 
-    total_portfolio_value = 0
-    for aid in asset_ids:
-        query = "SELECT MarketPrice from Assets WHERE AssetID = %s"
-        cursor.execute(query, (aid['AssetID'],))
-        entry = cursor.fetchone()
-        total_portfolio_value += (entry['MarketPrice'] * aid['Quantity'])
+    # if not asset_ids:
+    #     raise HTTPException(status_code=404, detail="No holdings found for the given portfolio id")
+
+    # total_portfolio_value = 0
+    # for aid in asset_ids:
+    #     query = "SELECT MarketPrice from Assets WHERE AssetID = %s"
+    #     cursor.execute(query, (aid['AssetID'],))
+    #     entry = cursor.fetchone()
+    #     total_portfolio_value += (entry['MarketPrice'] * aid['Quantity'])
 
     cursor.close()
     db.close()
 
-    return total_portfolio_value
+    # return total_portfolio_value
+    return entry
 
 
 @router.get("/portfolios/get_portfolio/{user_id}")
