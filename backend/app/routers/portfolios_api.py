@@ -1,9 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import mysql.connector
 from decouple import config
 
-app = FastAPI()
+router = APIRouter()
 
 
 class Portfolio(BaseModel):
@@ -28,7 +28,7 @@ def mysql_connect():
     return db, db.cursor(dictionary=True)
 
 
-@app.get("/portfolios/get_total_portfolio_value/{portfolio_id}")
+@router.get("/portfolios/get_total_portfolio_value/{portfolio_id}")
 async def get_total_portfolio_value(portfolio_id: int):
     db, cursor = mysql_connect()
 
@@ -51,7 +51,7 @@ async def get_total_portfolio_value(portfolio_id: int):
     return total_portfolio_value
 
 
-@app.get("/portfolios/get_portfolio/{user_id}")
+@router.get("/portfolios/get_portfolio/{user_id}")
 def get_portfolio(user_id: int):
     db, cursor = mysql_connect()
 
@@ -67,7 +67,7 @@ def get_portfolio(user_id: int):
         raise HTTPException(status_code=404, detail="Portfolio of that given user id not found")
 
 
-@app.post("/portfolios/create_portfolio")
+@router.post("/portfolios/create_portfolio")
 def create_portfolio(portfolio: Portfolio):
     db, cursor = mysql_connect()
 
@@ -89,7 +89,7 @@ def create_portfolio(portfolio: Portfolio):
     return {"message": "Portfolio created successfully."}
 
 
-@app.put("/portfolios/update_portfolio/{user_id}")
+@router.put("/portfolios/update_portfolio/{user_id}")
 def update_portfolio(user_id: int, portfolio: Portfolio):
     db, cursor = mysql_connect()
 
@@ -121,7 +121,7 @@ def update_portfolio(user_id: int, portfolio: Portfolio):
     return {"message": "Portfolio updated successfully."}
 
 
-@app.delete("/portfolios/delete_portfolio/{user_id}")
+@router.delete("/portfolios/delete_portfolio/{user_id}")
 def delete_portfolio(user_id: int):
     db, cursor = mysql_connect()
 
